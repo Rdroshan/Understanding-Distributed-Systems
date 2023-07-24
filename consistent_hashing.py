@@ -39,7 +39,7 @@ class consistent_hashing:
 
 		hd = self.hash_data(data)
 		succ_indx = self.__find_successor_server(hd)
-		print("succ", succ_indx)
+		# print("succ", succ_indx)
 		succ_sid, _ = self.sorted_servers_in_ring[succ_indx]
 		# Add data to the data store
 		self.server_to_data_map[succ_sid].append(data)
@@ -68,8 +68,8 @@ class consistent_hashing:
 		index_predecessor = -1
 		# binary search can also be used to get the index
 		for i in range(len(self.sorted_servers_in_ring)):
-			ring_sid, ring_val = self.sorted_servers_in_ring[i]
-			if hash_val > ring_val:
+			ring_sid, ring_server_hash_val = self.sorted_servers_in_ring[i]
+			if hash_val >= ring_server_hash_val: # for equal hash values, Next node will be the successor
 				index_predecessor = i
 			else:
 				break
@@ -104,6 +104,18 @@ class consistent_hashing:
 		else:
 			self.sorted_servers_in_ring.insert(index_to_insert + 1, (sid, val))
 
+		# redistribution of data
+		successor_indx = self.__find_successor_server(val)
+		succ_sid, _ = self.sorted_servers_in_ring[successor_indx]
+		data_in_successor = self.server_to_data_map[succ_sid]
+		new_data_in_succ = []
+		for i in range(len(data_in_successor)):
+			if self.__find_successor_server(self.hash_data(data_in_successor[i])) == successor_indx:
+				new_data_in_succ.append(data_in_successor[i])
+			else:
+				self.server_to_data_map[sid].append(data_in_successor[i])
+				
+		self.server_to_data_map[succ_sid] = new_data_in_succ
 
 	def remove_server(self, sid):
 		pass
@@ -121,10 +133,12 @@ print("intital servers")
 ch.print_server_data_map_and_order()
 
 # add server 1
+print("server1")
 s1 = str(uuid4())
 ch.add_server(s1)
 ch.print_server_data_map_and_order()
 
+print("server2")
 s2 = str(uuid4())
 ch.add_server(s2)
 ch.print_server_data_map_and_order()
@@ -135,10 +149,19 @@ ch.add_data(d)
 
 
 for i in ["cde", "efg", "jkl", "mno", "o"]:
+	print("hash of ", i, ch.hash_data(i))
 	ch.add_data(i)
 ch.print_server_data_map_and_order()
 
 
+ch.add_data("roshan")
+print("hash of ", "roshan", ch.hash_data("roshan"))
+ch.print_server_data_map_and_order()
+
+print("server3")
+s3 = str(uuid4())
+print("sid", s3)
+ch.add_server(s3)
 ch.add_data("roshan")
 print("hash of ", "roshan", ch.hash_data("roshan"))
 ch.print_server_data_map_and_order()
